@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  # ──────────────────────────────────────────────
+  # PostgreSQL — the single source of truth for all data
+  # ──────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: cvreview-db
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-cvreview}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cvreview}
+      POSTGRES_DB: ${DB_NAME:-cvreview}
+    volumes:
+      # Persist data across container restarts
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cvreview} -d ${DB_NAME:-cvreview}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ──────────────────────────────────────────────
+  # Go backend — serves REST API on :8080
+  # ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cvreview-backend
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-cvreview}
+      DB_PASSWORD: ${DB_PASSWORD:-cvreview}
+      DB_NAME: ${DB_NAME:-cvreview}
+      API_PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ──────────────────────────────────────────────
+  # React frontend — served by nginx on :3000
+  # ──────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cvreview-frontend
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
