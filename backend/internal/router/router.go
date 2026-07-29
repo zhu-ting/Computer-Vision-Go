@@ -1,5 +1,4 @@
 // Package router sets up the Gin engine and registers all route groups.
-// Each feature (exams, notes, etc.) gets its own route group.
 package router
 
 import (
@@ -14,15 +13,16 @@ func Setup() *gin.Engine {
 	// ── API v1 routes ──────────────────────────────────────
 	v1 := r.Group("/api/v1")
 	{
-		// Health check
 		v1.GET("/health", func(c *gin.Context) {
 			c.JSON(200, gin.H{"status": "ok"})
 		})
 
-		// Exams — generation, progress saving, and submission
+		// Exams
 		exams := v1.Group("/exams")
 		{
-			exams.POST("", handler.CreateExam) // POST /api/v1/exams
+			exams.POST("", handler.CreateExam)              // generate new exam
+			exams.PATCH("/:id/answers", handler.SaveAnswers) // incremental save
+			exams.POST("/:id/submit", handler.SubmitExam)    // submit & grade
 		}
 	}
 

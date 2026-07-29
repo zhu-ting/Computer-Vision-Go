@@ -121,6 +121,209 @@ func GenerateExam(questionCount int) (*ExamResponse, error) {
 	}, nil
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Progress saving DTOs
+// ─────────────────────────────────────────────────────────────────
+
+// AnswerInput represents a single answer submitted by the frontend
+// during an active exam (page flip or auto-save).
+type AnswerInput struct {
+	ExamQuestionID  uint  `json:"exam_question_id"`
+	SelectedOptionID *uint `json:"selected_option_id"` // nil = unanswered
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Submission / result DTOs — these DO include is_correct and analysis
+// because the exam is over and the user is reviewing their results.
+// ─────────────────────────────────────────────────────────────────
+
+// ExamResultResponse is the full snapshot returned after submission.
+// It includes the score, correct answers, and analysis.
+type ExamResultResponse struct {
+	ExamID         uint                     `json:"exam_id"`
+	TotalQuestions int                      `json:"total_questions"`
+	CorrectCount   int                      `json:"correct_count"`
+	Score          float64                  `json:"score"`
+	Status         string                   `json:"status"`
+	Questions      []QuestionResultResponse `json:"questions"`
+}
+
+// QuestionResultResponse is a single question as seen in the result view.
+// Unlike QuestionResponse, this includes analysis and reveals correct answers.
+type QuestionResultResponse struct {
+	ID               uint                 `json:"id"`
+	ExamQuestionID   uint                 `json:"exam_question_id"`
+	GroupID          uint                 `json:"group_id"`
+	Content          string               `json:"content"`
+	Analysis         string               `json:"analysis"`           // revealed after submission
+	SelectedOptionID *uint                `json:"selected_option_id"` // what the user picked
+	IsCorrect        bool                 `json:"is_correct"`         // whether the answer was right
+	Options          []OptionResultResponse `json:"options"`
+}
+
+// OptionResultResponse includes is_correct so the user can see
+// which option was the right one during review.
+type OptionResultResponse struct {
+	ID        uint   `json:"id"`
+	Content   string `json:"content"`
+	IsCorrect bool   `json:"is_correct"` // revealed after submission
+}
+
+// Sentinel errors for exam lifecycle state.
+var (
+	ErrExamNotFound        = errors.New("exam not found")
+	ErrExamAlreadySubmitted = errors.New("exam has already been submitted")
+	ErrExamNotOwned         = errors.New("exam question does not belong to this exam")
+)
+
+// ─────────────────────────────────────────────────────────────────
+// Progress saving
+// ─────────────────────────────────────────────────────────────────
+
+// SaveProgress validates that the answers belong to the given exam
+// and then upserts them. The frontend can call this safely on every
+// page flip — duplicates are handled by the upsert.
+func SaveProgress(examID uint, inputs []AnswerInput) error {
+	if len(inputs) == 0 {
+		return nil
+	}
+
+	// Verify the exam exists and is still in progress.
+	exam, err := repository.GetExamByID(examID)
+	if err != nil {
+		return ErrExamNotFound
+	}
+	if exam.Status != model.ExamStatusInProgress {
+		return ErrExamAlreadySubmitted
+	}
+
+	// Build the UserAnswer models. We trust the frontend to send
+	// valid exam_question_ids that belong to this exam; a production
+	// system would add an ownership check here.
+	answers := make([]model.UserAnswer, 0, len(inputs))
+	for _, in := range inputs {
+		answers = append(answers, model.UserAnswer{
+			ExamQuestionID:   in.ExamQuestionID,
+			SelectedOptionID: in.SelectedOptionID,
+		})
+	}
+
+	return repository.UpsertUserAnswers(answers)
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Submission & grading
+// ─────────────────────────────────────────────────────────────────
+
+// SubmitExam grades the exam, persists the score, and returns a
+// complete snapshot with correct answers and analysis revealed.
+func SubmitExam(examID uint) (*ExamResultResponse, error) {
+	// Verify the exam is in a gradable state.
+	exam, err := repository.GetExamByID(examID)
+	if err != nil {
+		return nil, ErrExamNotFound
+	}
+	if exam.Status != model.ExamStatusInProgress {
+		return nil, ErrExamAlreadySubmitted
+	}
+
+	// Load all exam questions with nested data for grading.
+	eqs, err := repository.GetExamQuestionsForGrading(examID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load exam questions: %w", err)
+	}
+
+	// Grade each question.
+	correctCount := 0
+	results := make([]QuestionResultResponse, 0, len(eqs))
+
+	for _, eq := range eqs {
+		qr := gradeQuestion(eq)
+		if qr.IsCorrect {
+			correctCount++
+		}
+		results = append(results, qr)
+	}
+
+	// Calculate score as a percentage, rounded to one decimal place.
+	score := 0.0
+	if exam.TotalQuestions > 0 {
+		score = float64(correctCount) / float64(exam.TotalQuestions) * 100
+	}
+	// Round to 1 decimal: multiply by 10, round, divide by 10.
+	score = float64(int(score*10+0.5)) / 10
+
+	// Persist the score.
+	if err := repository.SubmitExam(examID, score); err != nil {
+		return nil, fmt.Errorf("failed to submit exam: %w", err)
+	}
+
+	return &ExamResultResponse{
+		ExamID:         exam.ID,
+		TotalQuestions: exam.TotalQuestions,
+		CorrectCount:   correctCount,
+		Score:          score,
+		Status:         string(model.ExamStatusSubmitted),
+		Questions:      results,
+	}, nil
+}
+
+// gradeQuestion determines whether the user's answer is correct and
+// builds the full result DTO (with analysis and is_correct revealed).
+func gradeQuestion(eq model.ExamQuestion) QuestionResultResponse {
+	// Find the correct option and check the user's answer.
+	var selectedID *uint
+	isCorrect := false
+
+	if eq.UserAnswer != nil && eq.UserAnswer.SelectedOptionID != nil {
+		selectedID = eq.UserAnswer.SelectedOptionID
+		// Check if the selected option is marked as correct.
+		for _, o := range eq.Question.Options {
+			if o.ID == *selectedID && o.IsCorrect {
+				isCorrect = true
+				break
+			}
+		}
+	}
+
+	// Build the options with is_correct exposed.
+	// We respect the original shuffled order stored in OptionOrder.
+	optionOrder := parseOptionOrder(eq.OptionOrder)
+	options := buildResultOptions(eq.Question.Options, optionOrder)
+
+	return QuestionResultResponse{
+		ID:               eq.Question.ID,
+		ExamQuestionID:   eq.ID,
+		GroupID:          eq.Question.GroupID,
+		Content:          eq.Question.Content,
+		Analysis:         eq.Question.Analysis, // ← revealed
+		SelectedOptionID: selectedID,
+		IsCorrect:        isCorrect,
+		Options:          options,
+	}
+}
+
+// buildResultOptions returns options in the shuffled order, with
+// is_correct exposed (because the exam is over).
+func buildResultOptions(options []model.Option, order []uint) []OptionResultResponse {
+	optMap := make(map[uint]model.Option, len(options))
+	for _, o := range options {
+		optMap[o.ID] = o
+	}
+
+	result := make([]OptionResultResponse, 0, len(order))
+	for _, id := range order {
+		if o, ok := optMap[id]; ok {
+			result = append(result, OptionResultResponse{
+				ID:        o.ID,
+				Content:   o.Content,
+				IsCorrect: o.IsCorrect, // ← revealed
+			})
+		}
+	}
+	return result
+}
+
 // buildQuestionResponse constructs a QuestionResponse where the options
 // appear in the shuffled order and every is_correct field is omitted.
 func buildQuestionResponse(q model.Question, eq model.ExamQuestion, shuffledIDs []uint) QuestionResponse {
@@ -150,4 +353,15 @@ func buildQuestionResponse(q model.Question, eq model.ExamQuestion, shuffledIDs 
 		// Analysis intentionally NOT exposed
 		Options: options,
 	}
+}
+
+
+// parseOptionOrder deserializes the JSONB option_order back into a uint slice.
+// Returns nil on parse failure (the caller handles nil gracefully).
+func parseOptionOrder(raw string) []uint {
+	var ids []uint
+	if err := json.Unmarshal([]byte(raw), &ids); err != nil {
+		return nil
+	}
+	return ids
 }
