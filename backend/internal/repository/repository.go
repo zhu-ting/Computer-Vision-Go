@@ -1,4 +1,8 @@
-// Package repository is the data access layer.
-// Every database query lives here — services never write SQL or GORM queries directly.
-// This makes it easy to swap databases or mock for tests.
 package repository
+
+import "gorm.io/gorm"
+
+// gormDB is a type alias so repository functions can accept *gorm.DB
+// without importing gorm in every file's import block — the actual
+// import lives here.
+type gormDB = gorm.DB

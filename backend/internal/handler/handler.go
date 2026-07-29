@@ -1,4 +1,8 @@
 // Package handler contains HTTP request handlers.
-// Each file corresponds to a feature (exam, note, etc.).
-// Handlers are thin — they validate input, call a service, and write the response.
+// Handlers are deliberately thin:
+//  1. Bind & validate the request body / URL params
+//  2. Call the appropriate service method
+//  3. Write the HTTP response (status code + JSON body)
+//
+// Handlers never contain business logic or database queries.
 package handler
