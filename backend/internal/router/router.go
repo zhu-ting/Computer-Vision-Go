@@ -10,7 +10,6 @@ import (
 func Setup() *gin.Engine {
 	r := gin.Default()
 
-	// ── API v1 routes ──────────────────────────────────────
 	v1 := r.Group("/api/v1")
 	{
 		v1.GET("/health", func(c *gin.Context) {
@@ -20,9 +19,18 @@ func Setup() *gin.Engine {
 		// Exams
 		exams := v1.Group("/exams")
 		{
-			exams.POST("", handler.CreateExam)              // generate new exam
-			exams.PATCH("/:id/answers", handler.SaveAnswers) // incremental save
-			exams.POST("/:id/submit", handler.SubmitExam)    // submit & grade
+			exams.POST("", handler.CreateExam)
+			exams.PATCH("/:id/answers", handler.SaveAnswers)
+			exams.POST("/:id/submit", handler.SubmitExam)
+		}
+
+		// Notes — keyed by question group_id, not question version
+		notes := v1.Group("/notes")
+		{
+			notes.GET("", handler.ListNotes)
+			notes.GET("/:group_id", handler.GetNote)
+			notes.PUT("/:group_id", handler.SaveNote)
+			notes.DELETE("/:group_id", handler.DeleteNote)
 		}
 	}
 
