@@ -33,6 +33,22 @@ func Setup() *gin.Engine {
 			exams.POST("/:id/submit", handler.SubmitExam)
 		}
 
+		// Questions — CRUD for the question bank (admin/management)
+		questions := v1.Group("/questions")
+		{
+			questions.GET("", handler.ListQuestions)
+			questions.GET("/:id", handler.GetQuestion)
+			questions.POST("", handler.CreateQuestion)
+			questions.PUT("/:id", handler.UpdateQuestion)
+			questions.DELETE("/:id", handler.DeleteQuestion)
+		}
+
+		// Question groups — read-only reference data for the frontend
+		groups := v1.Group("/groups")
+		{
+			groups.GET("", handler.ListGroups)
+		}
+
 		// Notes — keyed by question group_id, not question version
 		notes := v1.Group("/notes")
 		{
