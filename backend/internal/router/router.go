@@ -2,6 +2,7 @@
 package router
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/tingzhu/cv-review/backend/internal/handler"
 )
@@ -9,6 +10,14 @@ import (
 // Setup creates and configures the Gin engine with middleware and routes.
 func Setup() *gin.Engine {
 	r := gin.Default()
+
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+    config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+
+    r.Use(cors.New(config))
 
 	v1 := r.Group("/api/v1")
 	{
