@@ -25,7 +25,7 @@ FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=builder /server /server
 
 # Copy seed data so the binary can find it at /app/data/seed_data.json
-COPY --from=builder /app/data ./data
+COPY --from=builder /app/data /app/data
 
 # Run as non-root user (provided by distroless)
 EXPOSE 8080
