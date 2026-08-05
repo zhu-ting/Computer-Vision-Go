@@ -296,16 +296,19 @@ export default function ExamPage() {
   const isLastPage = currentPage === totalPages;
   const unansweredOnSubmit = totalQuestions - answeredCount;
 
+  // Shorter save status for narrow screens.
+  const saveStatusShort = saving ? 'Saving...' : hasUnsaved ? 'Unsaved' : 'Saved';
+
   return (
-    <main className="mx-auto max-w-3xl px-4 py-8">
+    <main className="mx-auto max-w-3xl px-4 py-6 sm:py-8">
       {/* ── Header bar ──────────────────────────────────────── */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-gray-900">Exam #{examId}</h1>
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900">Exam #{examId}</h1>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Timer */}
           <span
-            className={`rounded-full px-3 py-1 text-sm font-mono font-semibold ${
+            className={`rounded-full px-2 sm:px-3 py-1 text-xs sm:text-sm font-mono font-semibold ${
               timerUrgent
                 ? 'bg-red-100 text-red-700 animate-pulse'
                 : 'bg-gray-100 text-gray-700'
@@ -314,23 +317,25 @@ export default function ExamPage() {
             {formatTime(timeLeft)}
           </span>
 
-          {/* Save status */}
+          {/* Save status — compact on mobile, verbose on desktop */}
           <span
-            className={`text-sm ${
+            className={`text-xs sm:text-sm ${
               saving ? 'text-brand-600' : hasUnsaved ? 'text-amber-600' : 'text-gray-400'
             }`}
+            title={saveStatus}
           >
-            {saveStatus}
+            <span className="hidden sm:inline">{saveStatus}</span>
+            <span className="sm:hidden">{saveStatusShort}</span>
           </span>
         </div>
       </div>
 
       {/* ── Progress ────────────────────────────────────────── */}
-      <div className="mb-2 flex items-center justify-between text-sm text-gray-500">
+      <div className="mb-2 flex items-center justify-between text-xs sm:text-sm text-gray-500">
         <span>
-          {answeredCount} of {totalQuestions} answered
+          {answeredCount}/{totalQuestions} answered
         </span>
-        <span>{Math.round(progressPct)}% complete</span>
+        <span>{Math.round(progressPct)}%</span>
       </div>
 
       <div className="mb-8 h-2 rounded-full bg-gray-100">
@@ -369,16 +374,17 @@ export default function ExamPage() {
           <button
             onClick={handleSubmitClick}
             disabled={submitting}
-            className="w-full rounded-lg bg-green-600 px-6 py-3 font-medium text-white
-                       shadow hover:bg-green-700 disabled:opacity-50 transition-colors"
+            className="w-full rounded-lg bg-green-600 px-4 sm:px-6 py-3.5 sm:py-3
+                       text-base sm:text-sm font-medium text-white shadow
+                       hover:bg-green-700 disabled:opacity-50 transition-colors"
           >
             {submitting ? 'Submitting...' : 'Submit Exam'}
           </button>
         )}
       </div>
 
-      {/* ── Keyboard shortcuts hint ─────────────────────────── */}
-      <p className="mt-6 text-center text-xs text-gray-400">
+      {/* ── Keyboard shortcuts hint (desktop only) ──────────── */}
+      <p className="mt-6 hidden sm:block text-center text-xs text-gray-400">
         Keyboard: ← → to navigate pages · A B C D to select options
       </p>
 
@@ -394,18 +400,18 @@ export default function ExamPage() {
               </span>
               . Unanswered questions will be marked as incorrect.
             </p>
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:gap-3">
               <button
                 onClick={() => setShowSubmitConfirm(false)}
-                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium
-                           text-gray-600 hover:bg-gray-50 transition-colors"
+                className="flex-1 rounded-lg border border-gray-200 px-4 py-2.5 sm:py-2
+                           text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 Go Back
               </button>
               <button
                 onClick={handleSubmit}
-                className="flex-1 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium
-                           text-white hover:bg-green-700 transition-colors"
+                className="flex-1 rounded-lg bg-green-600 px-4 py-2.5 sm:py-2 text-sm
+                           font-medium text-white hover:bg-green-700 transition-colors"
               >
                 Submit Anyway
               </button>

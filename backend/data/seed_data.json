@@ -1,181 +1,434 @@
 {
   "question_groups": [
     {
-      "title": "Convolution Kernels and Image Filtering",
-      "topic": "Image Filtering",
+      "title": "CNN Core Fundamentals",
+      "topic": "CNN Basics",
       "difficulty": "easy",
       "questions": [
         {
-          "content": "After applying a 3×3 box filter (mean filter) to an image, the image will become:",
-          "analysis": "A mean filter replaces each pixel with the average of its neighborhood, which is equivalent to low-pass filtering. High-frequency details (edges, noise) are attenuated because they represent the largest local variations. The result is a smoother, more blurred image.",
+          "content": "What is the purpose of convolutional layers in CNNs?",
+          "analysis": "The fundamental operation of a convolutional layer is the sliding window process where a kernel (filter) moves across the input. At each position, it calculates the dot product between its weights and the local input patch to extract spatial features.",
           "version": 1,
           "options": [
-            { "content": "Blurrier (smoothed)", "is_correct": true, "sort_order": 1 },
-            { "content": "Sharper", "is_correct": false, "sort_order": 2 },
-            { "content": "Brighter", "is_correct": false, "sort_order": 3 },
-            { "content": "Higher contrast", "is_correct": false, "sort_order": 4 }
+            {
+              "content": "Calculating the dot product of the input and kernels",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Reducing the size of the feature maps",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "Applying a nonlinear activation function",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Making the network learn faster",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "What is a kernel (or filter) in a CNN?",
+          "analysis": "A kernel is the 'eye' of the CNN. It is a small weight matrix (e.g., 3x3 or 5x5) that slides over the image to perform mathematical operations that highlight specific patterns like edges, textures, or shapes.",
+          "version": 1,
+          "options": [
+            {
+              "content": "A small matrix used to detect image features",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "A loss function",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "A pooling operation",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "A learning rate parameter",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "Why are CNNs considered more efficient than fully connected neural networks for images?",
+          "analysis": "In a fully connected network, every pixel is a parameter. CNNs use 'local connectivity' (neurons only look at a small patch) and 'weight sharing' (the same filter is used across the whole image), which drastically reduces the number of learnable parameters.",
+          "version": 1,
+          "options": [
+            {
+              "content": "CNNs use local connectivity and weight sharing, reducing the number of parameters",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "CNNs have fewer activation functions",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "CNNs do not require training",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "CNNs always use fewer layers",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "Which sequence correctly describes the typical flow in a CNN?",
+          "analysis": "The standard sequence starts with a Convolution (feature extraction), followed by ReLU (non-linearity), then Pooling (downsampling). Finally, Fully Connected layers use these features for classification at the Output.",
+          "version": 1,
+          "options": [
+            {
+              "content": "Convolution → ReLU → Pooling → Fully Connected → Output",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Pooling → ReLU → Convolution → Output",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "Fully Connected → Convolution → Pooling → Output",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "ReLU → Pooling → Convolution → Output",
+              "is_correct": false,
+              "sort_order": 4
+            }
           ]
         }
       ]
     },
     {
-      "title": "Canny Edge Detection Steps",
-      "topic": "Edge Detection",
+      "title": "Layer Functions and Activations",
+      "topic": "Architecture Components",
       "difficulty": "medium",
       "questions": [
         {
-          "content": "The correct sequence of steps in the Canny edge detection algorithm is:",
-          "analysis": "The standard Canny pipeline is: ① Gaussian smoothing for noise reduction; ② Compute gradient magnitude and direction (typically with Sobel operators); ③ Non-maximum suppression to thin edges; ④ Double thresholding + hysteresis to determine final edges. Non-maximum suppression must precede double thresholding; otherwise, thick edges would remain.",
+          "content": "What is the purpose of the ReLU activation function?",
+          "analysis": "ReLU (Rectified Linear Unit) replaces negative pixel values with zero. This introduces non-linearity, enabling the network to learn complex non-linear mappings between the input pixels and the output classes.",
           "version": 1,
           "options": [
-            { "content": "Gaussian smooth → gradient computation → non-maximum suppression → double threshold + hysteresis", "is_correct": true, "sort_order": 1 },
-            { "content": "Gradient computation → Gaussian smooth → double threshold + hysteresis → non-maximum suppression", "is_correct": false, "sort_order": 2 },
-            { "content": "Gaussian smooth → double threshold + hysteresis → gradient computation → non-maximum suppression", "is_correct": false, "sort_order": 3 },
-            { "content": "Non-maximum suppression → Gaussian smooth → gradient computation → double threshold + hysteresis", "is_correct": false, "sort_order": 4 }
+            {
+              "content": "Add non-linearity to the network",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Normalize the input image",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "Reduce image size",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Increase the number of filters",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "Which layer is mainly responsible for reducing the spatial size of feature maps?",
+          "analysis": "Pooling layers (Max or Average) downsample the input. By picking the maximum or average value in a neighborhood, they reduce the width and height of the map, which lowers computational cost and helps with translation invariance.",
+          "version": 1,
+          "options": [
+            {
+              "content": "Pooling Layer",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Convolution Layer",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "Fully Connected Layer",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Output Layer",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "What is the purpose of a Fully Connected (FC) layer?",
+          "analysis": "While Conv layers act as feature extractors, the FC layer acts as a classifier. It flattens the 2D/3D feature maps into a vector and combines all identified features to determine the final probability of each class.",
+          "version": 1,
+          "options": [
+            {
+              "content": "Combine extracted features to make the final prediction",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Detect image edges",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "Apply convolution",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Reduce image resolution",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "Which layer usually contains the largest number of learnable parameters in a traditional CNN?",
+          "analysis": "In classic architectures like VGG, the transition from the last conv layer to the first Fully Connected layer creates a massive number of weights because every input neuron connects to every output neuron in that layer.",
+          "version": 1,
+          "options": [
+            {
+              "content": "Fully Connected Layer",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Pooling Layer",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "ReLU Layer",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Padding Layer",
+              "is_correct": false,
+              "sort_order": 4
+            }
           ]
         }
       ]
     },
     {
-      "title": "SIFT Feature Invariance",
-      "topic": "Feature Detection",
+      "title": "Convolutional Hyperparameters",
+      "topic": "Hyperparameter Tuning",
       "difficulty": "medium",
       "questions": [
         {
-          "content": "The SIFT (Scale-Invariant Feature Transform) descriptor is invariant to which of the following transformations?",
-          "analysis": "SIFT's core design goals are scale invariance (achieved via the DoG pyramid) and rotation invariance (achieved via dominant orientation assignment). It also exhibits partial robustness to affine transformations, illumination changes, and viewpoint changes, but not full invariance. SIFT is not translation-invariant in a strict sense — keypoint locations shift with the image — but the descriptor is computed relative to the local patch, so detection and matching are robust to translation.",
+          "content": "Which parameter controls how many pixels the filter moves each time?",
+          "analysis": "Stride is the step size of the filter. A stride of 1 means the filter moves one pixel at a time, while a stride of 2 means it skips a pixel, effectively reducing the output size by half.",
           "version": 1,
           "options": [
-            { "content": "Scale and rotation", "is_correct": true, "sort_order": 1 },
-            { "content": "Arbitrary affine transformations", "is_correct": false, "sort_order": 2 },
-            { "content": "Arbitrary perspective transformations", "is_correct": false, "sort_order": 3 },
-            { "content": "Translation", "is_correct": false, "sort_order": 4 }
+            {
+              "content": "Stride",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Padding",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "Kernel Size",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Epoch",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "What is the purpose of padding?",
+          "analysis": "Without padding, the spatial size of the feature map shrinks with every convolution, and edge pixels are rarely processed. Padding (adding zero-value pixels around the border) allows the filter to cover the edges and maintain dimensions.",
+          "version": 1,
+          "options": [
+            {
+              "content": "Prevent feature maps from shrinking too quickly",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Increase the learning rate",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "Increase the number of neurons",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Remove image noise",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "What happens if the stride is increased from 1 to 2?",
+          "analysis": "Increasing the stride makes the output feature map smaller because the filter samples fewer locations across the input. This is often used as an alternative to pooling for downsampling.",
+          "version": 1,
+          "options": [
+            {
+              "content": "The feature map becomes smaller because the filter skips more pixels",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "The feature map becomes larger",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "More filters are created automatically",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "ReLU is disabled",
+              "is_correct": false,
+              "sort_order": 4
+            }
+          ]
+        },
+        {
+          "content": "Which of the following is NOT a learnable parameter of a convolution operation?",
+          "analysis": "Learnable parameters are those updated by backpropagation (weights and biases). Stride is a hyperparameter—a fixed setting chosen by the engineer before the training starts.",
+          "version": 1,
+          "options": [
+            {
+              "content": "Stride",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Number of filters",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "Kernel weights",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Bias",
+              "is_correct": false,
+              "sort_order": 4
+            }
           ]
         }
       ]
     },
     {
-      "title": "Harris Corner Detection Principle",
-      "topic": "Feature Detection",
+      "title": "Advanced CNN Concepts",
+      "topic": "Deep Learning Theory",
       "difficulty": "hard",
       "questions": [
         {
-          "content": "The Harris corner detector uses the eigenvalues λ₁ and λ₂ of the structure tensor (second-moment matrix) M to classify points. When a pixel is classified as a corner:",
-          "analysis": "The core idea of Harris corner detection: at a corner, shifting a window in any direction produces a large intensity change. The eigenvalues λ₁ and λ₂ of the structure tensor M represent the magnitude of intensity change along the two principal directions. At a corner, both directions exhibit large change → both λ₁ and λ₂ are large. At an edge, only one direction has large change → λ₁ ≫ λ₂ or vice versa. In a flat region, both are small.",
+          "content": "Which statement best describes local connectivity in CNNs?",
+          "analysis": "Unlike dense networks where every input affects every output, CNN neurons only receive input from a small 'receptive field' (local region). This mimics the human visual system and is ideal for detecting local features like lines.",
           "version": 1,
           "options": [
-            { "content": "Both λ₁ and λ₂ are large", "is_correct": true, "sort_order": 1 },
-            { "content": "λ₁ is large, λ₂ is small", "is_correct": false, "sort_order": 2 },
-            { "content": "Both λ₁ and λ₂ are small", "is_correct": false, "sort_order": 3 },
-            { "content": "λ₁ ≈ −λ₂", "is_correct": false, "sort_order": 4 }
+            {
+              "content": "Each neuron only looks at a small local region of the image",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "Every neuron connects to every input pixel",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "CNNs only work on grayscale images",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "Every filter processes the whole image at once",
+              "is_correct": false,
+              "sort_order": 4
+            }
           ]
-        }
-      ]
-    },
-    {
-      "title": "Camera Intrinsic Parameters",
-      "topic": "Camera Calibration",
-      "difficulty": "medium",
-      "questions": [
+        },
         {
-          "content": "In the pinhole camera model, which of the following belongs to the intrinsic parameters?",
-          "analysis": "Intrinsic parameters describe the camera's own geometric and optical properties, including focal length (f_x, f_y), principal point (c_x, c_y), and distortion coefficients. Extrinsic parameters describe the camera's pose in the world coordinate frame, including the rotation matrix R and translation vector t. Focal length and principal point are elements of the intrinsic matrix K.",
+          "content": "What is the effect of using a larger kernel size (e.g., 7×7 instead of 3×3)?",
+          "analysis": "A larger kernel has a wider receptive field, allowing it to capture more global or complex patterns. However, it requires significantly more multiplications (49 vs 9 per step), increasing computational cost.",
           "version": 1,
           "options": [
-            { "content": "Focal length f and principal point (c_x, c_y)", "is_correct": true, "sort_order": 1 },
-            { "content": "Rotation matrix R", "is_correct": false, "sort_order": 2 },
-            { "content": "Translation vector t", "is_correct": false, "sort_order": 3 },
-            { "content": "World coordinate system origin", "is_correct": false, "sort_order": 4 }
+            {
+              "content": "The filter can capture larger patterns but requires more computation",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "The network becomes linear",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "The image resolution increases",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "The number of output classes doubles",
+              "is_correct": false,
+              "sort_order": 4
+            }
           ]
-        }
-      ]
-    },
-    {
-      "title": "The Role of CNN Pooling Layers",
-      "topic": "Convolutional Neural Networks",
-      "difficulty": "easy",
-      "questions": [
+        },
         {
-          "content": "Which of the following is NOT a primary function of pooling layers in CNNs?",
-          "analysis": "Pooling layers serve three main purposes: ① downsampling (reducing spatial dimensions and computation); ② providing translation invariance; ③ expanding the receptive field of subsequent layers. Pooling does NOT increase the number of channels — channel count is determined by the number of filters in convolutional layers. In fact, pooling preserves the channel count unchanged.",
+          "content": "Why is ReLU preferred over the sigmoid activation function in many CNNs?",
+          "analysis": "Sigmoid functions suffer from 'vanishing gradients' where the slope becomes very small for high/low inputs, stopping learning. ReLU provides a constant gradient for all positive inputs, enabling deeper networks to train efficiently.",
           "version": 1,
           "options": [
-            { "content": "Increasing the number of feature map channels", "is_correct": true, "sort_order": 1 },
-            { "content": "Reducing the spatial resolution of feature maps", "is_correct": false, "sort_order": 2 },
-            { "content": "Providing a degree of translation invariance", "is_correct": false, "sort_order": 3 },
-            { "content": "Expanding the receptive field of subsequent convolutional layers", "is_correct": false, "sort_order": 4 }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "Optical Flow Assumptions",
-      "topic": "Optical Flow",
-      "difficulty": "medium",
-      "questions": [
-        {
-          "content": "The Lucas-Kanade optical flow method is based on which core assumption?",
-          "analysis": "Lucas-Kanade optical flow relies on three assumptions: ① brightness constancy — the intensity of a pixel remains unchanged after motion; ② small motion — motion between adjacent frames is small enough for a first-order Taylor approximation; ③ spatial coherence — neighboring pixels share the same motion. Among these, brightness constancy is the fundamental premise of the optical flow constraint equation.",
-          "version": 1,
-          "options": [
-            { "content": "Brightness constancy", "is_correct": true, "sort_order": 1 },
-            { "content": "Color constancy", "is_correct": false, "sort_order": 2 },
-            { "content": "Objects must be rigid bodies", "is_correct": false, "sort_order": 3 },
-            { "content": "The scene must be static", "is_correct": false, "sort_order": 4 }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "Applications of the Hough Transform",
-      "topic": "Hough Transform",
-      "difficulty": "easy",
-      "questions": [
-        {
-          "content": "The Hough Transform is most commonly used in computer vision for:",
-          "analysis": "The core idea of the Hough Transform is to map geometric shapes from image space to parameter space and use a voting mechanism. Its most classic application is detecting straight lines (using polar parameters ρ, θ) in edge maps, but it can also be extended to detect circles, ellipses, and other parametric shapes. It does not perform smoothing, segmentation, or classification.",
-          "version": 1,
-          "options": [
-            { "content": "Detecting geometric shapes such as lines and circles", "is_correct": true, "sort_order": 1 },
-            { "content": "Smoothing and denoising images", "is_correct": false, "sort_order": 2 },
-            { "content": "Segmenting different texture regions", "is_correct": false, "sort_order": 3 },
-            { "content": "Classifying images", "is_correct": false, "sort_order": 4 }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "Semantic vs. Instance Segmentation",
-      "topic": "Image Segmentation",
-      "difficulty": "medium",
-      "questions": [
-        {
-          "content": "Regarding the difference between semantic segmentation and instance segmentation, which statement is correct?",
-          "analysis": "Semantic segmentation assigns a class label (e.g., 'person', 'car') to every pixel but does not distinguish between different individuals of the same class — all people in an image receive the same 'person' label. Instance segmentation goes further: it not only knows which pixels belong to 'person' but also distinguishes 'person #1' from 'person #2'. Mask R-CNN is a representative model for instance segmentation.",
-          "version": 1,
-          "options": [
-            { "content": "Semantic segmentation does not distinguish individuals within a class; instance segmentation does", "is_correct": true, "sort_order": 1 },
-            { "content": "Semantic segmentation is finer-grained than instance segmentation and can distinguish each object instance", "is_correct": false, "sort_order": 2 },
-            { "content": "The two are identical; only the name differs", "is_correct": false, "sort_order": 3 },
-            { "content": "Instance segmentation can only detect a single object; semantic segmentation can detect multiple objects", "is_correct": false, "sort_order": 4 }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "IoU and Object Detection Evaluation",
-      "topic": "Object Detection",
-      "difficulty": "hard",
-      "questions": [
-        {
-          "content": "In object detection, the standard IoU (Intersection over Union) threshold is typically 0.5. A predicted box with IoU > 0.5 against a ground-truth box is considered a True Positive. When the threshold is raised from 0.5 to 0.75:",
-          "analysis": "The IoU threshold determines how strict the matching criterion is. Raising the threshold from 0.5 to 0.75 means the predicted box must overlap more with the ground-truth box to count as correct — a stricter standard. This reduces TP (some predictions that barely met the 0.5 threshold now fail), while increasing FN (they become missed detections) and FP (they fail to match any ground-truth and count as false alarms). As a result, mAP typically drops.",
-          "version": 1,
-          "options": [
-            { "content": "mAP typically decreases because the matching criterion is stricter", "is_correct": true, "sort_order": 1 },
-            { "content": "mAP typically increases because low-quality matches are removed", "is_correct": false, "sort_order": 2 },
-            { "content": "mAP stays the same; the IoU threshold does not affect the final result", "is_correct": false, "sort_order": 3 },
-            { "content": "It depends on the specific dataset and cannot be determined", "is_correct": false, "sort_order": 4 }
+            {
+              "content": "ReLU helps reduce the vanishing gradient problem and is computationally efficient",
+              "is_correct": true,
+              "sort_order": 1
+            },
+            {
+              "content": "ReLU is easier to understand",
+              "is_correct": false,
+              "sort_order": 2
+            },
+            {
+              "content": "ReLU produces probabilities",
+              "is_correct": false,
+              "sort_order": 3
+            },
+            {
+              "content": "ReLU requires fewer images",
+              "is_correct": false,
+              "sort_order": 4
+            }
           ]
         }
       ]
