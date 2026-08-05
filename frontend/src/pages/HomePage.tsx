@@ -72,14 +72,11 @@ export default function HomePage() {
         </button>
       </div>
 
-      <footer className="mt-8 text-center">
-        <a
-          href="/notes"
-          className="inline-block min-h-[44px] px-4 py-2 text-sm text-brand-600 hover:underline"
-        >
+      {/* <footer className="mt-8 text-center">
+        <a href="/notes" className="text-sm text-brand-600 hover:underline">
           View my notes →
         </a>
-      </footer>
+      </footer> */}
     </main>
   );
 }
