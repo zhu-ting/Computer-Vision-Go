@@ -70,11 +70,11 @@ export default function HomePage() {
         </button>
       </div>
 
-      <footer className="mt-8 text-center">
+      {/* <footer className="mt-8 text-center">
         <a href="/notes" className="text-sm text-brand-600 hover:underline">
           View my notes →
         </a>
-      </footer>
+      </footer> */}
     </main>
   );
 }
