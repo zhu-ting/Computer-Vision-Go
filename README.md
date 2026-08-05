@@ -66,10 +66,6 @@ When you reach the last page, click **Submit Exam**. A confirmation dialog warns
 - Expand the **analysis** section for detailed explanations.
 - Your answers are permanently recorded.
 
-### 4. Take notes
-
-Visit **/notes** (or click "View my notes" on the home page) to manage personal notes. Notes are keyed by **question group** (not individual question versions), so they survive content updates.
-
 ## API Endpoints
 
 | Method | Path | Description |
