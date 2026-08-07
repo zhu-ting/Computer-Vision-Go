@@ -6,14 +6,17 @@ import "time"
 // Notes are tied to this group, not to individual question versions,
 // so user notes survive content updates.
 type QuestionGroup struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	Title     string    `gorm:"not null;size:500" json:"title"`    // short topic summary
-	Topic     string    `gorm:"not null;size:200;index" json:"topic"` // e.g. "Edge Detection", "CNN"
-	Difficulty string   `gorm:"not null;size:20;index" json:"difficulty"` // "easy", "medium", "hard"
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID         uint      `gorm:"primaryKey" json:"id"`
+	ModuleID   uint      `gorm:"not null;default:0;index" json:"module_id"` // 0 = unassigned (legacy rows)
+	Title      string    `gorm:"not null;size:500" json:"title"`            // short topic summary
+	Topic      string    `gorm:"not null;size:200;index" json:"topic"`     // e.g. "Edge Detection", "CNN"
+	Difficulty string    `gorm:"not null;size:20;index" json:"difficulty"` // "easy", "medium", "hard"
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 
 	// Associations
+	// Note: Module association has no FK constraint because legacy rows
+	// use module_id = 0 (no matching module). Queries filter via ModuleID directly.
 	Questions []Question `gorm:"foreignKey:GroupID" json:"questions,omitempty"`
 	Notes     []UserNote `gorm:"foreignKey:GroupID" json:"notes,omitempty"`
 }

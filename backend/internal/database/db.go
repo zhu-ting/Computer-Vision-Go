@@ -51,6 +51,7 @@ func Connect(dsn string) {
 	// indexes — but it will NOT delete or rename existing columns.
 	// For production, use versioned migrations instead.
 	if err := DB.AutoMigrate(
+		&model.Module{},
 		&model.QuestionGroup{},
 		&model.Question{},
 		&model.Option{},
