@@ -130,7 +130,8 @@ export interface CreateQuestionGroupRequest {
 }
 
 export interface CreateQuestionRequest {
-  group_id: number;
+  group_id?: number;
+  module_id?: number;
   content: string;
   analysis: string;
   options: { content: string; is_correct: boolean; sort_order?: number }[];

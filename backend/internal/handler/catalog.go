@@ -25,10 +25,12 @@ type CreateQuestionGroupRequest struct {
 }
 
 // CreateQuestionRequest is the JSON body for POST /api/v1/questions.
+// Either group_id or module_id must be provided.
 type CreateQuestionRequest struct {
-	GroupID  uint                 `json:"group_id" binding:"required"`
-	Content  string               `json:"content" binding:"required"`
-	Analysis string               `json:"analysis" binding:"required"`
+	GroupID  *uint                 `json:"group_id"`
+	ModuleID *uint                 `json:"module_id"`
+	Content  string                `json:"content" binding:"required"`
+	Analysis string                `json:"analysis" binding:"required"`
 	Options  []service.OptionInput `json:"options" binding:"required,min=2,dive"`
 }
 
@@ -106,15 +108,20 @@ func CreateQuestionGroup(c *gin.Context) {
 
 // ── Question handlers ────────────────────────────────────────────
 
-// ListQuestions handles GET /api/v1/questions?group_id=.
+// ListQuestions handles GET /api/v1/questions?group_id= or ?module_id=.
 func ListQuestions(c *gin.Context) {
 	groupID, err := parseOptionalUintQuery(c, "group_id")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid group_id"})
 		return
 	}
+	moduleID, err := parseOptionalUintQuery(c, "module_id")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid module_id"})
+		return
+	}
 
-	questions, err := service.ListQuestions(groupID)
+	questions, err := service.ListQuestions(groupID, moduleID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch questions"})
 		return
@@ -126,11 +133,16 @@ func ListQuestions(c *gin.Context) {
 func CreateQuestion(c *gin.Context) {
 	var req CreateQuestionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "group_id, content, analysis, and at least 2 options are required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "content, analysis, and at least 2 options are required"})
 		return
 	}
 
-	q, err := service.CreateQuestion(req.GroupID, req.Content, req.Analysis, req.Options)
+	if req.GroupID == nil && req.ModuleID == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "either group_id or module_id is required"})
+		return
+	}
+
+	q, err := service.CreateQuestion(req.GroupID, req.ModuleID, req.Content, req.Analysis, req.Options)
 	if err != nil {
 		if errors.Is(err, service.ErrQuestionGroupNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "question group not found"})
@@ -140,11 +152,31 @@ func CreateQuestion(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
+		if errors.Is(err, service.ErrModuleNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "module not found"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create question"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, q)
+}
+
+// DeleteQuestion handles DELETE /api/v1/questions/:id.
+func DeleteQuestion(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid question id"})
+		return
+	}
+
+	if err := service.DeleteQuestion(uint(id)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete question"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
