@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/tingzhu/cv-review/backend/internal/database"
 	"github.com/tingzhu/cv-review/backend/internal/model"
+	"gorm.io/gorm"
 )
 
 // ── Modules ──────────────────────────────────────────────────────
@@ -133,6 +134,67 @@ func CreateQuestionWithOptions(q *model.Question, opts []model.Option) error {
 			if err := tx.Create(&opts[i]).Error; err != nil {
 				return err
 			}
+		}
+		return nil
+	})
+}
+
+// FindOrCreateDefaultGroup finds a "Default" question group for the given module,
+// or creates one if it doesn't exist. This supports the simplified data-entry flow
+// where questions are added directly under a module without explicit group management.
+func FindOrCreateDefaultGroup(moduleID uint) (*model.QuestionGroup, error) {
+	var group model.QuestionGroup
+	err := database.DB.
+		Where("module_id = ? AND title = ?", moduleID, "Default").
+		First(&group).Error
+	if err == nil {
+		return &group, nil
+	}
+	if err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	// Create a default group for this module
+	group = model.QuestionGroup{
+		ModuleID:   moduleID,
+		Title:      "Default",
+		Topic:      "General",
+		Difficulty: "medium",
+	}
+	if err := database.DB.Create(&group).Error; err != nil {
+		return nil, err
+	}
+	return &group, nil
+}
+
+// ListQuestionsByModule returns all questions belonging to any group under the given module,
+// with options eagerly loaded in sort_order.
+func ListQuestionsByModule(moduleID uint) ([]model.Question, error) {
+	var questions []model.Question
+	err := database.DB.
+		Preload("Options", func(db *gormDB) *gormDB {
+			return db.Order("sort_order ASC")
+		}).
+		Joins("JOIN question_groups ON question_groups.id = questions.group_id").
+		Where("question_groups.module_id = ?", moduleID).
+		Order("questions.version DESC").
+		Find(&questions).Error
+	if err != nil {
+		return nil, err
+	}
+	return questions, nil
+}
+
+// DeleteQuestion deletes a question and its options in a single transaction.
+func DeleteQuestion(id uint) error {
+	return database.DB.Transaction(func(tx *gormDB) error {
+		// Delete options first (foreign key constraint)
+		if err := tx.Where("question_id = ?", id).Delete(&model.Option{}).Error; err != nil {
+			return err
+		}
+		// Then delete the question
+		if err := tx.Delete(&model.Question{}, id).Error; err != nil {
+			return err
 		}
 		return nil
 	})

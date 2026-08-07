@@ -1,42 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   listModules,
-  listQuestionGroups,
-  createQuestionGroup,
   listQuestions,
   createQuestion,
+  deleteQuestion,
 } from '../api/client';
-import type { Module, QuestionGroupSummary, AdminQuestion } from '../types';
-
-const DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
+import type { Module, AdminQuestion } from '../types';
 
 export default function AdminDataEntryPage() {
   // ── Modules ───────────────────────────────────────────────────
   const [modules, setModules] = useState<Module[]>([]);
   const [selectedModuleId, setSelectedModuleId] = useState<number | ''>('');
-  const [groups, setGroups] = useState<QuestionGroupSummary[]>([]);
   const [loadingModules, setLoadingModules] = useState(true);
 
-  // ── Question group form ───────────────────────────────────────
-  const [groupTitle, setGroupTitle] = useState('');
-  const [groupTopic, setGroupTopic] = useState('');
-  const [groupDifficulty, setGroupDifficulty] = useState<string>('easy');
-  const [groupSubmitting, setGroupSubmitting] = useState(false);
-  const [groupError, setGroupError] = useState<string | null>(null);
-  const [groupSuccess, setGroupSuccess] = useState<string | null>(null);
-
   // ── Question form ─────────────────────────────────────────────
-  const [selectedGroupId, setSelectedGroupId] = useState<number | ''>('');
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
   const [qContent, setQContent] = useState('');
   const [qAnalysis, setQAnalysis] = useState('');
   const [options, setOptions] = useState<{ content: string; is_correct: boolean }[]>([
     { content: '', is_correct: true },
     { content: '', is_correct: false },
+    { content: '', is_correct: false },
+    { content: '', is_correct: false },
   ]);
   const [qSubmitting, setQSubmitting] = useState(false);
   const [qError, setQError] = useState<string | null>(null);
   const [qSuccess, setQSuccess] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // ── Load modules ──────────────────────────────────────────────
   const fetchModules = useCallback(async () => {
@@ -54,75 +44,40 @@ export default function AdminDataEntryPage() {
     fetchModules();
   }, [fetchModules]);
 
-  // ── Load groups when module changes ───────────────────────────
-  const fetchGroups = useCallback(async (moduleId: number) => {
+  // ── Load questions when module changes ────────────────────────
+  const fetchQuestions = useCallback(async (moduleId: number) => {
     try {
-      setGroups(await listQuestionGroups(moduleId));
+      setQuestions(await listQuestions({ moduleId }));
     } catch {
-      setGroups([]);
+      setQuestions([]);
     }
   }, []);
 
   useEffect(() => {
     if (selectedModuleId !== '') {
-      fetchGroups(selectedModuleId);
-    } else {
-      setGroups([]);
-    }
-  }, [selectedModuleId, fetchGroups]);
-
-  // ── Load questions when group changes ─────────────────────────
-  const fetchQuestions = useCallback(async (groupId: number) => {
-    try {
-      setQuestions(await listQuestions(groupId));
-    } catch {
-      setQuestions([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedGroupId !== '') {
-      fetchQuestions(selectedGroupId);
+      fetchQuestions(selectedModuleId);
     } else {
       setQuestions([]);
     }
-  }, [selectedGroupId, fetchQuestions]);
-
-  // ── Create question group ─────────────────────────────────────
-  const handleCreateGroup = async () => {
-    if (!groupTitle.trim() || !groupTopic.trim() || selectedModuleId === '') return;
-    setGroupSubmitting(true);
-    setGroupError(null);
-    setGroupSuccess(null);
-    try {
-      const g = await createQuestionGroup({
-        module_id: selectedModuleId,
-        title: groupTitle.trim(),
-        topic: groupTopic.trim(),
-        difficulty: groupDifficulty,
-      });
-      setGroupTitle('');
-      setGroupTopic('');
-      setGroupDifficulty('easy');
-      setGroupSuccess(`Group "${g.title}" created (ID: ${g.id}).`);
-      await fetchGroups(selectedModuleId);
-      setSelectedGroupId(g.id);
-    } catch (err) {
-      setGroupError(err instanceof Error ? err.message : 'Failed to create question group');
-    } finally {
-      setGroupSubmitting(false);
-    }
-  };
+  }, [selectedModuleId, fetchQuestions]);
 
   // ── Create question ───────────────────────────────────────────
   const handleCreateQuestion = async () => {
-    if (!qContent.trim() || !qAnalysis.trim() || selectedGroupId === '') return;
+    if (
+      !qContent.trim() ||
+      !qAnalysis.trim() ||
+      selectedModuleId === '' ||
+      options.some((o) => !o.content.trim()) ||
+      options.filter((o) => o.is_correct).length !== 1
+    )
+      return;
+
     setQSubmitting(true);
     setQError(null);
     setQSuccess(null);
     try {
       await createQuestion({
-        group_id: selectedGroupId,
+        module_id: selectedModuleId,
         content: qContent.trim(),
         analysis: qAnalysis.trim(),
         options: options.map((o, i) => ({ ...o, sort_order: i + 1 })),
@@ -132,9 +87,11 @@ export default function AdminDataEntryPage() {
       setOptions([
         { content: '', is_correct: true },
         { content: '', is_correct: false },
+        { content: '', is_correct: false },
+        { content: '', is_correct: false },
       ]);
       setQSuccess('Question created successfully.');
-      await fetchQuestions(selectedGroupId);
+      await fetchQuestions(selectedModuleId);
     } catch (err) {
       setQError(err instanceof Error ? err.message : 'Failed to create question');
     } finally {
@@ -155,20 +112,17 @@ export default function AdminDataEntryPage() {
     });
   };
 
-  const addOption = () => {
-    setOptions((prev) => [...prev, { content: '', is_correct: false }]);
-  };
-
-  const removeOption = (idx: number) => {
-    if (options.length <= 2) return;
-    setOptions((prev) => {
-      const next = prev.filter((_, i) => i !== idx);
-      // If we removed the correct one, make the first one correct
-      if (!next.some((o) => o.is_correct)) {
-        next[0].is_correct = true;
-      }
-      return next;
-    });
+  // ── Delete question ───────────────────────────────────────────
+  const handleDeleteQuestion = async (id: number) => {
+    setDeletingId(id);
+    try {
+      await deleteQuestion(id);
+      setQuestions((prev) => prev.filter((q) => q.id !== id));
+    } catch {
+      // silent — question remains in list
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────
@@ -176,7 +130,7 @@ export default function AdminDataEntryPage() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900">Data Entry</h1>
       <p className="mt-1 text-sm text-gray-500">
-        Create question groups and questions under a module.
+        Add questions directly under a module.
       </p>
 
       {/* ── Module selector ─────────────────────────────────── */}
@@ -192,7 +146,6 @@ export default function AdminDataEntryPage() {
             onChange={(e) => {
               const v = e.target.value;
               setSelectedModuleId(v ? Number(v) : '');
-              setSelectedGroupId('');
             }}
             className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm
                        focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
@@ -216,97 +169,8 @@ export default function AdminDataEntryPage() {
         )}
       </div>
 
-      {/* ── Question group form ─────────────────────────────── */}
-      {selectedModuleId !== '' && (
-        <div className="mt-4 rounded-xl border bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-gray-900">Create Question Group</h2>
-
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-medium text-gray-600">Title</label>
-              <input
-                type="text"
-                value={groupTitle}
-                onChange={(e) => setGroupTitle(e.target.value)}
-                placeholder="e.g., Backpropagation Basics"
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm
-                           focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600">Topic</label>
-              <input
-                type="text"
-                value={groupTopic}
-                onChange={(e) => setGroupTopic(e.target.value)}
-                placeholder="e.g., Backpropagation"
-                className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm
-                           focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
-              />
-            </div>
-          </div>
-
-          <div className="mt-3">
-            <label className="block text-xs font-medium text-gray-600">Difficulty</label>
-            <select
-              value={groupDifficulty}
-              onChange={(e) => setGroupDifficulty(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm
-                         focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
-            >
-              {DIFFICULTIES.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={handleCreateGroup}
-            disabled={groupSubmitting || !groupTitle.trim() || !groupTopic.trim()}
-            className="mt-4 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white
-                       hover:bg-brand-700 disabled:opacity-50 transition-colors"
-          >
-            {groupSubmitting ? 'Creating...' : 'Create Group'}
-          </button>
-
-          {groupError && (
-            <p className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-600">{groupError}</p>
-          )}
-          {groupSuccess && (
-            <p className="mt-3 rounded-lg bg-green-50 p-2 text-sm text-green-600">{groupSuccess}</p>
-          )}
-        </div>
-      )}
-
-      {/* ── Group selector + question form ───────────────────── */}
-      {groups.length > 0 && (
-        <div className="mt-4 rounded-xl border bg-white p-5 shadow-sm">
-          <label className="block text-sm font-medium text-gray-700">
-            Target question group
-          </label>
-          <select
-            value={selectedGroupId}
-            onChange={(e) => {
-              const v = e.target.value;
-              setSelectedGroupId(v ? Number(v) : '');
-            }}
-            className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm
-                       focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
-          >
-            <option value="">-- Choose a group --</option>
-            {groups.map((g) => (
-              <option key={g.id} value={g.id}>
-                #{g.id} — {g.title} ({g.difficulty}, {g.question_count} questions)
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {/* ── Question form ────────────────────────────────────── */}
-      {selectedGroupId !== '' && (
+      {selectedModuleId !== '' && (
         <div className="mt-4 rounded-xl border bg-white p-5 shadow-sm">
           <h2 className="font-semibold text-gray-900">Add Question</h2>
 
@@ -334,20 +198,11 @@ export default function AdminDataEntryPage() {
               />
             </div>
 
-            {/* Options */}
+            {/* Options — fixed at 4 (1 correct + 3 incorrect) */}
             <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-600">
-                  Options ({options.length})
-                </span>
-                <button
-                  type="button"
-                  onClick={addOption}
-                  className="text-xs font-medium text-brand-600 hover:underline"
-                >
-                  + Add option
-                </button>
-              </div>
+              <span className="text-xs font-medium text-gray-600">
+                Options (1 correct + 3 incorrect)
+              </span>
               <div className="mt-2 space-y-2">
                 {options.map((opt, idx) => (
                   <div key={idx} className="flex items-center gap-2">
@@ -370,15 +225,6 @@ export default function AdminDataEntryPage() {
                       className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm
                                  focus:border-brand-400 focus:outline-none focus:ring-1 focus:ring-brand-400"
                     />
-                    {options.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() => removeOption(idx)}
-                        className="shrink-0 text-xs text-red-500 hover:underline"
-                      >
-                        Remove
-                      </button>
-                    )}
                   </div>
                 ))}
               </div>
@@ -421,6 +267,14 @@ export default function AdminDataEntryPage() {
                   <p className="text-sm font-medium text-gray-900">
                     v{q.version}: {q.content}
                   </p>
+                  <button
+                    onClick={() => handleDeleteQuestion(q.id)}
+                    disabled={deletingId === q.id}
+                    className="shrink-0 ml-4 rounded-lg px-3 py-1 text-xs font-medium text-red-600
+                               hover:bg-red-50 disabled:opacity-50 transition-colors"
+                  >
+                    {deletingId === q.id ? 'Deleting...' : 'Delete'}
+                  </button>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">{q.analysis}</p>
                 <div className="mt-2 flex flex-wrap gap-2">

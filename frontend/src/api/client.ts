@@ -125,9 +125,14 @@ export function createQuestionGroup(
 
 // ── Questions (admin CRUD) ──────────────────────────────────────
 
-export function listQuestions(groupId?: number): Promise<AdminQuestion[]> {
-  const path = groupId != null ? `/questions?group_id=${groupId}` : '/questions';
-  return request<AdminQuestion[]>(path);
+export function listQuestions(params?: { groupId?: number; moduleId?: number }): Promise<AdminQuestion[]> {
+  if (params?.groupId != null) {
+    return request<AdminQuestion[]>(`/questions?group_id=${params.groupId}`);
+  }
+  if (params?.moduleId != null) {
+    return request<AdminQuestion[]>(`/questions?module_id=${params.moduleId}`);
+  }
+  return request<AdminQuestion[]>('/questions');
 }
 
 export function createQuestion(body: CreateQuestionRequest): Promise<AdminQuestion> {
@@ -135,4 +140,8 @@ export function createQuestion(body: CreateQuestionRequest): Promise<AdminQuesti
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+export function deleteQuestion(id: number): Promise<{ status: string }> {
+  return request(`/questions/${id}`, { method: 'DELETE' });
 }

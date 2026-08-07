@@ -59,6 +59,7 @@ func Setup() *gin.Engine {
 		{
 			questions.GET("", handler.ListQuestions)
 			questions.POST("", handler.CreateQuestion)
+			questions.DELETE("/:id", handler.DeleteQuestion)
 		}
 	}
 

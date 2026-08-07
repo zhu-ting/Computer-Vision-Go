@@ -179,9 +179,16 @@ func CreateQuestionGroup(moduleID uint, title, topic, difficulty string) (*Quest
 
 // ── Question service ────────────────────────────────────────────
 
-// ListQuestions returns questions, optionally filtered by group.
-func ListQuestions(groupID *uint) ([]QuestionAdminResponse, error) {
-	questions, err := repository.ListQuestions(groupID)
+// ListQuestions returns questions, optionally filtered by group or module.
+func ListQuestions(groupID, moduleID *uint) ([]QuestionAdminResponse, error) {
+	var questions []model.Question
+	var err error
+
+	if moduleID != nil {
+		questions, err = repository.ListQuestionsByModule(*moduleID)
+	} else {
+		questions, err = repository.ListQuestions(groupID)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("list questions: %w", err)
 	}
@@ -193,14 +200,36 @@ func ListQuestions(groupID *uint) ([]QuestionAdminResponse, error) {
 	return responses, nil
 }
 
-// CreateQuestion creates a question with options under a group.
+// CreateQuestion creates a question with options under a group or module.
+// When moduleID is provided, a default group is auto-created (or reused) for that module.
 // Validates: group exists, at least 2 options, exactly 1 correct.
-func CreateQuestion(groupID uint, content, analysis string, options []OptionInput) (*QuestionAdminResponse, error) {
+func CreateQuestion(groupID, moduleID *uint, content, analysis string, options []OptionInput) (*QuestionAdminResponse, error) {
 	content = strings.TrimSpace(content)
 	analysis = strings.TrimSpace(analysis)
 
+	// Resolve group ID from module ID if needed
+	var resolvedGroupID uint
+	if moduleID != nil {
+		// Validate the module exists
+		exists, err := repository.ModuleExists(*moduleID)
+		if err != nil {
+			return nil, fmt.Errorf("check module: %w", err)
+		}
+		if !exists {
+			return nil, ErrModuleNotFound
+		}
+
+		group, err := repository.FindOrCreateDefaultGroup(*moduleID)
+		if err != nil {
+			return nil, fmt.Errorf("find or create default group: %w", err)
+		}
+		resolvedGroupID = group.ID
+	} else if groupID != nil {
+		resolvedGroupID = *groupID
+	}
+
 	// Validate group exists
-	exists, err := repository.QuestionGroupExists(groupID)
+	exists, err := repository.QuestionGroupExists(resolvedGroupID)
 	if err != nil {
 		return nil, fmt.Errorf("check question group: %w", err)
 	}
@@ -223,7 +252,7 @@ func CreateQuestion(groupID uint, content, analysis string, options []OptionInpu
 	}
 
 	// Determine next version
-	version, err := repository.MaxQuestionVersion(groupID)
+	version, err := repository.MaxQuestionVersion(resolvedGroupID)
 	if err != nil {
 		return nil, fmt.Errorf("get max version: %w", err)
 	}
@@ -231,7 +260,7 @@ func CreateQuestion(groupID uint, content, analysis string, options []OptionInpu
 
 	// Build model objects
 	q := &model.Question{
-		GroupID:  groupID,
+		GroupID:  resolvedGroupID,
 		Content:  content,
 		Analysis: analysis,
 		Version:  version,
@@ -255,7 +284,7 @@ func CreateQuestion(groupID uint, content, analysis string, options []OptionInpu
 	}
 
 	// Re-fetch to get IDs and timestamps
-	questions, err := repository.ListQuestions(&groupID)
+	questions, err := repository.ListQuestions(&resolvedGroupID)
 	if err != nil {
 		return nil, fmt.Errorf("re-fetch question: %w", err)
 	}
@@ -267,6 +296,14 @@ func CreateQuestion(groupID uint, content, analysis string, options []OptionInpu
 	}
 
 	return nil, fmt.Errorf("created question not found after insert")
+}
+
+// DeleteQuestion deletes a question and its options by ID.
+func DeleteQuestion(id uint) error {
+	if err := repository.DeleteQuestion(id); err != nil {
+		return fmt.Errorf("delete question: %w", err)
+	}
+	return nil
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
