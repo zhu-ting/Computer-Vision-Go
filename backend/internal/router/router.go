@@ -41,6 +41,25 @@ func Setup() *gin.Engine {
 			notes.PUT("/:group_id", handler.SaveNote)
 			notes.DELETE("/:group_id", handler.DeleteNote)
 		}
+
+		// Modules (themes) + question bank catalog
+		modules := v1.Group("/modules")
+		{
+			modules.GET("", handler.ListModules)
+			modules.POST("", handler.CreateModule)
+		}
+
+		questionGroups := v1.Group("/question-groups")
+		{
+			questionGroups.GET("", handler.ListQuestionGroups)
+			questionGroups.POST("", handler.CreateQuestionGroup)
+		}
+
+		questions := v1.Group("/questions")
+		{
+			questions.GET("", handler.ListQuestions)
+			questions.POST("", handler.CreateQuestion)
+		}
 	}
 
 	return r

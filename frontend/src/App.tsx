@@ -3,6 +3,11 @@ import HomePage from './pages/HomePage';
 import ExamPage from './pages/ExamPage';
 import ResultPage from './pages/ResultPage';
 import NotesPage from './pages/NotesPage';
+import AdminLoginPage from './pages/AdminLoginPage';
+import AdminModulesPage from './pages/AdminModulesPage';
+import AdminDataEntryPage from './pages/AdminDataEntryPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminLayout from './components/AdminLayout';
 
 export default function App() {
   return (
@@ -12,6 +17,21 @@ export default function App() {
         <Route path="/exam/:examId" element={<ExamPage />} />
         <Route path="/result/:examId" element={<ResultPage />} />
         <Route path="/notes" element={<NotesPage />} />
+
+        {/* Admin routes */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="modules" element={<AdminModulesPage />} />
+          <Route path="data-entry" element={<AdminDataEntryPage />} />
+        </Route>
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>

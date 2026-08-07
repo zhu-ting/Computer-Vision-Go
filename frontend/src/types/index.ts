@@ -78,3 +78,59 @@ export interface SaveAnswersRequest {
 export interface SaveNoteRequest {
   content: string;
 }
+
+// ── Modules (themes) ────────────────────────────────────────────
+
+export interface Module {
+  id: number;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ── Catalog (admin) ─────────────────────────────────────────────
+
+export interface QuestionGroupSummary {
+  id: number;
+  module_id: number;
+  title: string;
+  topic: string;
+  difficulty: string;
+  question_count: number;
+}
+
+export interface AdminOption {
+  id: number;
+  content: string;
+  is_correct: boolean;
+  sort_order: number;
+}
+
+export interface AdminQuestion {
+  id: number;
+  group_id: number;
+  content: string;
+  analysis: string;
+  version: number;
+  options: AdminOption[];
+}
+
+// ── Admin API request bodies ────────────────────────────────────
+
+export interface CreateModuleRequest {
+  name: string;
+}
+
+export interface CreateQuestionGroupRequest {
+  module_id: number;
+  title: string;
+  topic: string;
+  difficulty: string;
+}
+
+export interface CreateQuestionRequest {
+  group_id: number;
+  content: string;
+  analysis: string;
+  options: { content: string; is_correct: boolean; sort_order?: number }[];
+}
