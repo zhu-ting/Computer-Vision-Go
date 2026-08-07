@@ -1,23 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createExam } from '../api/client';
+import { createExam, listModules } from '../api/client';
+import type { Module } from '../types';
 
 const QUESTION_COUNTS = [10, 20, 30, 40, 50];
+
+const DEFAULT_MODULE_NAME = 'week7_deep_learning';
 
 export default function HomePage() {
   const [count, setCount] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    listModules()
+      .then((mods) => {
+        setModules(mods);
+        const defaultMod = mods.find((m) => m.name === DEFAULT_MODULE_NAME);
+        if (defaultMod) {
+          setSelectedModuleId(defaultMod.id);
+        } else if (mods.length > 0) {
+          setSelectedModuleId(mods[0].id);
+        }
+      })
+      .catch(() => {
+        // Silently ignore — modules are optional for exam creation.
+      });
+  }, []);
 
   const handleStart = async () => {
     setLoading(true);
     setError(null);
     try {
-      const exam = await createExam({ question_count: count });
-      // Pass exam data to the exam page via navigation state.
-      // On page refresh the state is lost — a production app would
-      // have a GET /api/v1/exams/:id endpoint to rehydrate.
+      const exam = await createExam({
+        question_count: count,
+        ...(selectedModuleId != null ? { module_id: selectedModuleId } : {}),
+      });
       navigate(`/exam/${exam.exam_id}`, { state: { exam } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create exam');
@@ -56,6 +77,31 @@ export default function HomePage() {
             </button>
           ))}
         </div>
+
+        {modules.length > 0 && (
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700">
+              Module
+            </label>
+            <select
+              value={selectedModuleId ?? ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                setSelectedModuleId(v ? Number(v) : null);
+              }}
+              className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5
+                         text-base sm:text-sm text-gray-700 focus:border-brand-600
+                         focus:outline-none focus:ring-1 focus:ring-brand-600"
+            >
+              <option value="">All modules</option>
+              {modules.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {error && (
           <p className="mt-4 text-sm text-red-600">{error}</p>

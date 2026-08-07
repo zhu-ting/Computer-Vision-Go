@@ -11,7 +11,8 @@ import (
 
 // CreateExamRequest is the expected JSON body for POST /api/v1/exams.
 type CreateExamRequest struct {
-	QuestionCount int `json:"question_count" binding:"required,min=1"`
+	QuestionCount int   `json:"question_count" binding:"required,min=1"`
+	ModuleID      *uint `json:"module_id"` // optional — filter questions by module
 }
 
 // SaveAnswersRequest is the JSON body for incremental progress saves.
@@ -49,7 +50,7 @@ func CreateExam(c *gin.Context) {
 		return
 	}
 
-	exam, err := service.GenerateExam(req.QuestionCount)
+	exam, err := service.GenerateExam(req.QuestionCount, req.ModuleID)
 	if err != nil {
 		if errors.Is(err, service.ErrNoQuestions) {
 			c.JSON(http.StatusServiceUnavailable, gin.H{

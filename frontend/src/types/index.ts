@@ -69,6 +69,7 @@ export interface Note {
 
 export interface CreateExamRequest {
   question_count: number;
+  module_id?: number;
 }
 
 export interface SaveAnswersRequest {
