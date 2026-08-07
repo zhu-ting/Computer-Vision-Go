@@ -83,23 +83,22 @@ export default function HomePage() {
             <label className="block text-sm font-medium text-gray-700">
               Module
             </label>
-            <select
-              value={selectedModuleId ?? ''}
-              onChange={(e) => {
-                const v = e.target.value;
-                setSelectedModuleId(v ? Number(v) : null);
-              }}
-              className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5
-                         text-base sm:text-sm text-gray-700 focus:border-brand-600
-                         focus:outline-none focus:ring-1 focus:ring-brand-600"
-            >
-              <option value="">All modules</option>
+            <div className="mt-3 flex flex-wrap gap-2">
               {modules.map((m) => (
-                <option key={m.id} value={m.id}>
+                <button
+                  key={m.id}
+                  onClick={() => setSelectedModuleId(m.id)}
+                  className={`min-h-[44px] min-w-[44px] rounded-lg border px-4 py-2.5 sm:py-2
+                              text-base sm:text-sm font-medium transition-colors ${
+                    selectedModuleId === m.id
+                      ? 'border-brand-600 bg-brand-50 text-brand-700'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300 active:bg-gray-50'
+                  }`}
+                >
                   {m.name}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         )}
 
