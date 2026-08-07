@@ -12,16 +12,25 @@ import (
 // their Options. It excludes questions whose GroupID appears in excludeGroupIDs
 // (not currently used, but useful for future "don't repeat" logic).
 //
+// When moduleID is non-nil, only questions belonging to question groups
+// under that module are returned.
+//
 // PostgreSQL's RANDOM() ordering is fine for small-to-medium tables;
 // for large-scale production, consider TABLESAMPLE or a dedicated
 // random-selection strategy.
-func GetRandomQuestions(count int) ([]model.Question, error) {
+func GetRandomQuestions(count int, moduleID *uint) ([]model.Question, error) {
 	var questions []model.Question
-	err := database.DB.
-		Preload("Options").                      // eager-load to avoid N+1
-		Order("RANDOM()").                       // PostgreSQL random ordering
-		Limit(count).
-		Find(&questions).Error
+	q := database.DB.
+		Preload("Options"). // eager-load to avoid N+1
+		Order("RANDOM()").  // PostgreSQL random ordering
+		Limit(count)
+
+	if moduleID != nil {
+		q = q.Joins("JOIN question_groups ON question_groups.id = questions.group_id").
+			Where("question_groups.module_id = ?", *moduleID)
+	}
+
+	err := q.Find(&questions).Error
 	if err != nil {
 		return nil, err
 	}

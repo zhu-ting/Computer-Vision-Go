@@ -54,9 +54,9 @@ type OptionResponse struct {
 //
 // The shuffle result is persisted in ExamQuestion.OptionOrder so that
 // the same order is preserved across page saves, page loads, and grading.
-func GenerateExam(questionCount int) (*ExamResponse, error) {
+func GenerateExam(questionCount int, moduleID *uint) (*ExamResponse, error) {
 	// ── Step 1: Pick random questions ──────────────────────────
-	questions, err := repository.GetRandomQuestions(questionCount)
+	questions, err := repository.GetRandomQuestions(questionCount, moduleID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch questions: %w", err)
 	}
