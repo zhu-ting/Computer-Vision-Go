@@ -186,14 +186,26 @@ func ListQuestionsByModule(moduleID uint) ([]model.Question, error) {
 }
 
 // DeleteQuestion deletes a question and its options in a single transaction.
+// It also cleans up any exam_questions and user_answers that reference this question.
 func DeleteQuestion(id uint) error {
 	return database.DB.Transaction(func(tx *gormDB) error {
-		// Delete options first (foreign key constraint)
+		// Delete user answers tied to this question's exam questions
+		if err := tx.Exec(
+			"DELETE FROM user_answers WHERE exam_question_id IN (SELECT id FROM exam_questions WHERE question_id = ?)",
+			id,
+		).Error; err != nil {
+			return err
+		}
+		// Delete exam questions that reference this question (so exams don't block deletion)
+		if err := tx.Where("question_id = ?", id).Delete(&model.ExamQuestion{}).Error; err != nil {
+			return err
+		}
+		// Delete options
 		if err := tx.Where("question_id = ?", id).Delete(&model.Option{}).Error; err != nil {
 			return err
 		}
-		// Then delete the question
-		if err := tx.Delete(&model.Question{}, id).Error; err != nil {
+		// Delete the question itself
+		if err := tx.Where("id = ?", id).Delete(&model.Question{}).Error; err != nil {
 			return err
 		}
 		return nil
