@@ -1,35 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import useSWR from 'swr';
 import { createExam, listModules } from '../api/client';
 import type { Module } from '../types';
 
 const QUESTION_COUNTS = [10, 20, 30, 40, 50];
-
 const DEFAULT_MODULE_NAME = 'week7_deep_learning';
 
 export default function HomePage() {
   const [count, setCount] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modules, setModules] = useState<Module[]>([]);
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
   const navigate = useNavigate();
 
+  // SWR caches the modules list and revalidates on focus (stale-while-revalidate).
+  // Navigation back to this page is instant — no re-fetch spinner.
+  const { data: modules = [] } = useSWR<Module[]>(
+    '/modules',
+    () => listModules(),
+    {
+      revalidateOnFocus: true,
+      dedupingInterval: 60_000, // don't re-fetch within 1 min of a prior fetch
+    },
+  );
+
+  // Auto-select the default module when modules first load.
   useEffect(() => {
-    listModules()
-      .then((mods) => {
-        setModules(mods);
-        const defaultMod = mods.find((m) => m.name === DEFAULT_MODULE_NAME);
-        if (defaultMod) {
-          setSelectedModuleId(defaultMod.id);
-        } else if (mods.length > 0) {
-          setSelectedModuleId(mods[0].id);
-        }
-      })
-      .catch(() => {
-        // Silently ignore — modules are optional for exam creation.
-      });
-  }, []);
+    if (modules.length === 0) return;
+    const defaultMod = modules.find((m) => m.name === DEFAULT_MODULE_NAME);
+    if (defaultMod) {
+      setSelectedModuleId(defaultMod.id);
+    } else if (modules.length > 0 && selectedModuleId === null) {
+      setSelectedModuleId(modules[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modules]);
 
   const handleStart = async () => {
     setLoading(true);
@@ -116,12 +122,6 @@ export default function HomePage() {
           {loading ? 'Creating exam...' : 'Start Exam'}
         </button>
       </div>
-
-      {/* <footer className="mt-8 text-center">
-        <a href="/notes" className="text-sm text-brand-600 hover:underline">
-          View my notes →
-        </a>
-      </footer> */}
     </main>
   );
 }

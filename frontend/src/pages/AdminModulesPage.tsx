@@ -1,53 +1,63 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
+import useSWR from 'swr';
 import { listModules, createModule } from '../api/client';
 import type { Module } from '../types';
 
 export default function AdminModulesPage() {
-  const [modules, setModules] = useState<Module[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // SWR handles loading, error, data, and caching automatically.
+  const {
+    data: modules = [],
+    error,
+    isLoading,
+    mutate,
+  } = useSWR<Module[]>('/modules', () => listModules(), {
+    revalidateOnFocus: true,
+    dedupingInterval: 60_000,
+  });
 
-  // Form state
+  // Form state — still local (mutation, not fetch)
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const fetchModules = useCallback(async () => {
-    setLoading(true);
-    try {
-      setModules(await listModules());
-    } catch {
-      setError('Failed to load modules');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchModules();
-  }, [fetchModules]);
-
   const handleAdd = async () => {
     if (!name.trim()) return;
     setSubmitting(true);
-    setError(null);
+    setErrorForm(null);
     setSuccess(null);
     try {
       await createModule({ name: name.trim() });
       setName('');
       setSuccess(`Module "${name.trim()}" created.`);
-      await fetchModules();
+      await mutate(); // re-fetch the modules list
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create module');
+      setErrorForm(err instanceof Error ? err.message : 'Failed to create module');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
+  // Keep form-level errors separate from fetch errors.
+  const [errorForm, setErrorForm] = useState<string | null>(null);
+
+  if (isLoading) {
     return (
       <div className="text-center py-16">
         <p className="text-gray-500">Loading modules...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-red-600">Failed to load modules.</p>
+        <button
+          onClick={() => mutate()}
+          className="mt-3 text-sm text-brand-600 hover:underline"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -86,8 +96,8 @@ export default function AdminModulesPage() {
           </button>
         </div>
 
-        {error && (
-          <p className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-600">{error}</p>
+        {errorForm && (
+          <p className="mt-3 rounded-lg bg-red-50 p-2 text-sm text-red-600">{errorForm}</p>
         )}
         {success && (
           <p className="mt-3 rounded-lg bg-green-50 p-2 text-sm text-green-600">{success}</p>
