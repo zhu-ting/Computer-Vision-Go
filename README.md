@@ -41,6 +41,33 @@ npm install
 npm run dev                    # Vite dev server on :5173
 ```
 
+## Render Deployment & Keep-Alive
+
+This project is hosted on [Render](https://render.com) free tier. Render's free plan has a known limitation: **web services spin down after 15 minutes of inactivity**. When a request comes in after the service has slept, Render starts the container back up, which can cause a **cold start delay of 30–60 seconds** for the first request.
+
+### Automated keep-alive (GitHub Actions)
+
+To mitigate this, a GitHub Actions workflow (`.github/workflows/keep-alive.yml`) pings the health endpoint every 10 minutes, keeping the instance warm:
+
+- **Schedule:** every 10 minutes (`*/10 * * * *`)
+- **Target:** `https://cv-review-api.onrender.com/api/v1/health`
+- **Manual trigger:** supported via `workflow_dispatch` — go to the Actions tab and click "Run workflow" to test
+- **Configurable URL:** set the `RENDER_SERVICE_URL` repository variable in **Settings → Secrets and variables → Actions → Variables** to override the default URL
+
+> **Note:** GitHub Actions scheduled workflows may experience delays or be paused for inactive repositories. For production use, pair this with an external monitor as a backup.
+
+### Alternative: external monitors
+
+If you prefer a zero-code option or want a second layer of redundancy, set up a free external uptime monitor that pings the same health endpoint:
+
+| Service | Free Tier | Setup |
+|---------|-----------|-------|
+| [UptimeRobot](https://uptimerobot.com) | 50 monitors, 5-minute intervals | Add a new HTTP(s) monitor → `https://cv-review-api.onrender.com/api/v1/health` |
+| [cron-job.org](https://cron-job.org) | Unlimited jobs, 1-minute minimum | Create a cron job → URL: `https://cv-review-api.onrender.com/api/v1/health`, schedule: every 10 minutes |
+| [Better Stack](https://betterstack.com) | 10 monitors, 3-minute intervals | Add uptime monitor → URL: `https://cv-review-api.onrender.com/api/v1/health` |
+
+All of these work the same way — they send a `GET` request to the health endpoint on a schedule, which is enough to prevent Render from idling out the service.
+
 ## Usage
 
 ### 1. Start an exam
