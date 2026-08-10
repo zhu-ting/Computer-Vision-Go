@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import useSWR from 'swr';
 import {
   listModules,
   listQuestions,
@@ -8,10 +9,14 @@ import {
 import type { Module, AdminQuestion } from '../types';
 
 export default function AdminDataEntryPage() {
-  // ── Modules ───────────────────────────────────────────────────
-  const [modules, setModules] = useState<Module[]>([]);
+  // ── Modules (cached via SWR) ──────────────────────────────────
+  const { data: modules = [], isLoading: loadingModules } = useSWR<Module[]>(
+    '/modules',
+    () => listModules(),
+    { revalidateOnFocus: true, dedupingInterval: 60_000 },
+  );
+
   const [selectedModuleId, setSelectedModuleId] = useState<number | ''>('');
-  const [loadingModules, setLoadingModules] = useState(true);
 
   // ── Question form ─────────────────────────────────────────────
   const [questions, setQuestions] = useState<AdminQuestion[]>([]);
@@ -27,22 +32,6 @@ export default function AdminDataEntryPage() {
   const [qError, setQError] = useState<string | null>(null);
   const [qSuccess, setQSuccess] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  // ── Load modules ──────────────────────────────────────────────
-  const fetchModules = useCallback(async () => {
-    setLoadingModules(true);
-    try {
-      setModules(await listModules());
-    } catch {
-      // silent
-    } finally {
-      setLoadingModules(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchModules();
-  }, [fetchModules]);
 
   // ── Load questions when module changes ────────────────────────
   const fetchQuestions = useCallback(async (moduleId: number) => {

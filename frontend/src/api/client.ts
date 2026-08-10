@@ -18,6 +18,11 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 // Thin wrapper around fetch. For a larger app, consider react-query or swr
 // to handle caching, refetching, and optimistic updates.
 
+/** Shared fetcher for use with SWR. Throws ApiError on non-2xx responses. */
+export async function swrFetcher<T>(path: string): Promise<T> {
+  return request<T>(path);
+}
+
 async function request<T>(
   path: string,
   options?: RequestInit,
