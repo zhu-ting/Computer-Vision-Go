@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createExam } from '../api/client';
 import type { Module } from '../types';
 
-const QUESTION_COUNTS = [10, 20, 30, 40, 50];
+const QUESTION_COUNTS = [10, 20];
 
 // Modules are hardcoded — the homepage no longer fetches them from the API.
 // IDs must match the `modules` table in the database.
