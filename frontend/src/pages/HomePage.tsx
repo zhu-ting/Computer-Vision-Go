@@ -1,41 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useSWR from 'swr';
-import { createExam, listModules } from '../api/client';
+import { createExam } from '../api/client';
 import type { Module } from '../types';
 
 const QUESTION_COUNTS = [10, 20, 30, 40, 50];
+
+// Modules are hardcoded — the homepage no longer fetches them from the API.
+// IDs must match the `modules` table in the database.
+const MODULES: Pick<Module, 'id' | 'name'>[] = [
+  { id: 1, name: 'week2_image_processing' },
+  { id: 2, name: 'week3_feature_representation_and_shape_descriptors' },
+  { id: 3, name: 'week4_pattern_recognition_and_classifiers' },
+  { id: 4, name: 'week5_segmentation_and_morphology' },
+  { id: 5, name: 'week7_deep_learning' },
+  { id: 6, name: 'week9_motion' },
+];
+
 const DEFAULT_MODULE_NAME = 'week7_deep_learning';
+const DEFAULT_MODULE_ID =
+  MODULES.find((m) => m.name === DEFAULT_MODULE_NAME)?.id ?? null;
 
 export default function HomePage() {
   const [count, setCount] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(null);
-  const navigate = useNavigate();
-
-  // SWR caches the modules list and revalidates on focus (stale-while-revalidate).
-  // Navigation back to this page is instant — no re-fetch spinner.
-  const { data: modules = [] } = useSWR<Module[]>(
-    '/modules',
-    () => listModules(),
-    {
-      revalidateOnFocus: true,
-      dedupingInterval: 60_000, // don't re-fetch within 1 min of a prior fetch
-    },
+  const [selectedModuleId, setSelectedModuleId] = useState<number | null>(
+    DEFAULT_MODULE_ID,
   );
-
-  // Auto-select the default module when modules first load.
-  useEffect(() => {
-    if (modules.length === 0) return;
-    const defaultMod = modules.find((m) => m.name === DEFAULT_MODULE_NAME);
-    if (defaultMod) {
-      setSelectedModuleId(defaultMod.id);
-    } else if (modules.length > 0 && selectedModuleId === null) {
-      setSelectedModuleId(modules[0].id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modules]);
+  const navigate = useNavigate();
 
   const handleStart = async () => {
     setLoading(true);
@@ -84,29 +76,27 @@ export default function HomePage() {
           ))}
         </div>
 
-        {modules.length > 0 && (
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-gray-700">
-              Module
-            </label>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {modules.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => setSelectedModuleId(m.id)}
-                  className={`min-h-[44px] min-w-[44px] rounded-lg border px-4 py-2.5 sm:py-2
-                              text-base sm:text-sm font-medium transition-colors ${
-                    selectedModuleId === m.id
-                      ? 'border-brand-600 bg-brand-50 text-brand-700'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300 active:bg-gray-50'
-                  }`}
-                >
-                  {m.name}
-                </button>
-              ))}
-            </div>
+        <div className="mt-6">
+          <label className="block text-sm font-medium text-gray-700">
+            Module
+          </label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {MODULES.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setSelectedModuleId(m.id)}
+                className={`min-h-[44px] min-w-[44px] rounded-lg border px-4 py-2.5 sm:py-2
+                            text-base sm:text-sm font-medium transition-colors ${
+                  selectedModuleId === m.id
+                    ? 'border-brand-600 bg-brand-50 text-brand-700'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300 active:bg-gray-50'
+                }`}
+              >
+                {m.name}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
         {error && (
           <p className="mt-4 text-sm text-red-600">{error}</p>
