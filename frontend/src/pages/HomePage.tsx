@@ -53,7 +53,7 @@ export default function HomePage() {
       <p className="mt-3 sm:mt-4 text-base sm:text-lg text-gray-600">
         This repository is created for self-study, practice, and revision.
         If you'd like to contribute related questions or practice problems, feel free to
-        <a href="https://github.com/zhu-ting/Computer-Vision-Go/pulls" style={{ color: "#0f7661" }}> open a pull request.</a>
+        <a href="https://github.com/zhu-ting/Computer-Vision-Go/issues" style={{ color: "#0f7661" }}> create an issue.</a>
         If you find this helpful, consider <a href="https://buymeacoffee.com/zhuting" style={{ color: "#0f7661" }}> buying me a coffee! </a>
       </p>
 
