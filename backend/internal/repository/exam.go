@@ -54,6 +54,11 @@ func FindOptionsByQuestionID(questionID uint) ([]model.Option, error) {
 
 // CreateExamWithQuestions inserts an Exam and its ExamQuestions in a single
 // transaction. If any insertion fails, the entire operation rolls back.
+//
+// ExamQuestions are inserted with one batch INSERT (single SQL statement)
+// instead of one INSERT per question — on a throttled DB (e.g. Render free
+// tier) per-statement latency dominates, so batching cuts ~N round trips.
+// GORM backfills the primary key of each record after the batch insert.
 func CreateExamWithQuestions(exam *model.Exam, examQuestions []model.ExamQuestion) error {
 	return database.DB.Transaction(func(tx *gormDB) error {
 		if err := tx.Create(exam).Error; err != nil {
@@ -61,11 +66,8 @@ func CreateExamWithQuestions(exam *model.Exam, examQuestions []model.ExamQuestio
 		}
 		for i := range examQuestions {
 			examQuestions[i].ExamID = exam.ID
-			if err := tx.Create(&examQuestions[i]).Error; err != nil {
-				return err
-			}
 		}
-		return nil
+		return tx.Create(&examQuestions).Error
 	})
 }
 
