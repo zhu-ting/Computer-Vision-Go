@@ -51,8 +51,10 @@ export default function HomePage() {
         Computer Vision · Exam Review
       </h1>
       <p className="mt-3 sm:mt-4 text-base sm:text-lg text-gray-600">
-        Select the number of questions, then start practicing.
-        Your progress is saved automatically — submit whenever you're ready.
+        This repository is created for self-study, practice, and revision.
+        If you'd like to contribute related questions or practice problems, feel free to
+        <a href="https://github.com/zhu-ting/Computer-Vision-Go/pulls" style={{ color: "#0f7661" }}> open a pull request.</a>
+        If you find this helpful, consider <a href="https://buymeacoffee.com/zhuting" style={{ color: "#0f7661" }}> buying me a coffee! </a>
       </p>
 
       <div className="mt-8 sm:mt-10 rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
