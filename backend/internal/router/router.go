@@ -2,6 +2,8 @@
 package router
 
 import (
+	"net/http"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/tingzhu/cv-review/backend/internal/handler"
@@ -23,6 +25,13 @@ func Setup() *gin.Engine {
 	{
 		v1.GET("/health", func(c *gin.Context) {
 			c.JSON(200, gin.H{"status": "ok"})
+		})
+
+		// Ping is a zero-dependency liveness probe: no database access, no
+		// business logic — it responds immediately. Use it as a latency
+		// baseline to tell network/host slowness apart from DB slowness.
+		v1.GET("/ping", func(c *gin.Context) {
+			c.Status(http.StatusOK)
 		})
 
 		// Exams
